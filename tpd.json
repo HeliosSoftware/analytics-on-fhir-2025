@@ -1,0 +1,1070 @@
+{
+  "name": "Tpd",
+  "remarks": [
+    "under development"
+  ],
+  "states": {
+    "Initial": {
+      "type": "Initial",
+      "direct_transition": "Age guard",
+      "name": "Initial"
+    },
+    "Age guard": {
+      "type": "Guard",
+      "allow": {
+        "condition_type": "Age",
+        "operator": "<",
+        "quantity": 140,
+        "unit": "years",
+        "value": 0
+      },
+      "direct_transition": "Hospital visit",
+      "name": "Age guard"
+    },
+    "Hospital visit": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "telemedicine_possibility": "none",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 123456789,
+          "display": "SNOMED Code",
+          "value_set": ""
+        }
+      ],
+      "name": "Hospital visit",
+      "distributed_transition": [
+        {
+          "transition": "0 days passed",
+          "distribution": 0.2504
+        },
+        {
+          "transition": "1 days passed",
+          "distribution": 0.1836
+        },
+        {
+          "transition": "2 days passed",
+          "distribution": 0.1503
+        },
+        {
+          "transition": "3 days passed",
+          "distribution": 0.1169
+        },
+        {
+          "transition": "4 days passed",
+          "distribution": 0.0501
+        },
+        {
+          "transition": "5 days passed",
+          "distribution": 0.0217
+        },
+        {
+          "transition": "6 days passed",
+          "distribution": 0.0167
+        },
+        {
+          "transition": "7 days passed",
+          "distribution": 0.0134
+        },
+        {
+          "transition": "8 days passed",
+          "distribution": 0.0117
+        },
+        {
+          "transition": "9 days passed",
+          "distribution": 0.0117
+        },
+        {
+          "transition": "10 days passed",
+          "distribution": 0.0117
+        },
+        {
+          "transition": "11 days passed",
+          "distribution": 0.0117
+        },
+        {
+          "transition": "12 days passed",
+          "distribution": 0.0117
+        },
+        {
+          "transition": "13 days passed",
+          "distribution": 0.01
+        },
+        {
+          "transition": "14 days passed",
+          "distribution": 0.01
+        },
+        {
+          "transition": "15 days passed",
+          "distribution": 0.01
+        },
+        {
+          "transition": "16 days passed",
+          "distribution": 0.01
+        },
+        {
+          "transition": "17 days passed",
+          "distribution": 0.01
+        },
+        {
+          "transition": "18 days passed",
+          "distribution": 0.0083
+        },
+        {
+          "transition": "19 days passed",
+          "distribution": 0.0083
+        },
+        {
+          "transition": "20 days passed",
+          "distribution": 0.0083
+        },
+        {
+          "transition": "21 days passed",
+          "distribution": 0.0083
+        },
+        {
+          "transition": "22 days passed",
+          "distribution": 0.0552
+        }
+      ]
+    },
+    "0 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 0
+        }
+      },
+      "unit": "days",
+      "name": "0 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.4667
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.4667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.0667
+        }
+      ]
+    },
+    "1 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 1
+        }
+      },
+      "unit": "days",
+      "name": "1 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.6364
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.1818
+        }
+      ]
+    },
+    "2 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 2
+        }
+      },
+      "unit": "days",
+      "name": "2 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.6667
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.1667
+        }
+      ]
+    },
+    "3 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 3
+        }
+      },
+      "unit": "days",
+      "name": "3 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.7143
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1429
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.1429
+        }
+      ]
+    },
+    "4 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 4
+        }
+      },
+      "unit": "days",
+      "name": "4 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.6667
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.1667
+        }
+      ]
+    },
+    "5 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 5
+        }
+      },
+      "unit": "days",
+      "name": "5 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.3846
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.2307
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.3846
+        }
+      ]
+    },
+    "6 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 6
+        }
+      },
+      "unit": "days",
+      "name": "6 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.3
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.2
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5
+        }
+      ]
+    },
+    "7 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 7
+        }
+      },
+      "unit": "days",
+      "name": "7 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.125
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.625
+        }
+      ]
+    },
+    "8 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 8
+        }
+      },
+      "unit": "days",
+      "name": "8 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.2857
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1429
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5714
+        }
+      ]
+    },
+    "9 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 9
+        }
+      },
+      "unit": "days",
+      "name": "9 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.2857
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1429
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5714
+        }
+      ]
+    },
+    "10 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 10
+        }
+      },
+      "unit": "days",
+      "name": "10 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.2857
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1429
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5714
+        }
+      ]
+    },
+    "11 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 11
+        }
+      },
+      "unit": "days",
+      "name": "11 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.2857
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1429
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5714
+        }
+      ]
+    },
+    "12 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 12
+        }
+      },
+      "unit": "days",
+      "name": "12 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.2857
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1429
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5714
+        }
+      ]
+    },
+    "13 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 13
+        }
+      },
+      "unit": "days",
+      "name": "13 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.3333
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5
+        }
+      ]
+    },
+    "14 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 14
+        }
+      },
+      "unit": "days",
+      "name": "14 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.3333
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5
+        }
+      ]
+    },
+    "15 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 15
+        }
+      },
+      "unit": "days",
+      "name": "15 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.3333
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5
+        }
+      ]
+    },
+    "16 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 16
+        }
+      },
+      "unit": "days",
+      "name": "16 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.3333
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5
+        }
+      ]
+    },
+    "17 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 17
+        }
+      },
+      "unit": "days",
+      "name": "17 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.3333
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1667
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.5
+        }
+      ]
+    },
+    "18 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 18
+        }
+      },
+      "unit": "days",
+      "name": "18 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.4
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.2
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.4
+        }
+      ]
+    },
+    "19 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 19
+        }
+      },
+      "unit": "days",
+      "name": "19 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.4
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.2
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.4
+        }
+      ]
+    },
+    "20 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 20
+        }
+      },
+      "unit": "days",
+      "name": "20 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.4
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.2
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.4
+        }
+      ]
+    },
+    "21 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 21
+        }
+      },
+      "unit": "days",
+      "name": "21 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.4
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.2
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.4
+        }
+      ]
+    },
+    "22 days passed": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "EXACT",
+        "parameters": {
+          "value": 22
+        }
+      },
+      "unit": "days",
+      "name": "22 days passed",
+      "distributed_transition": [
+        {
+          "transition": "Blue",
+          "distribution": 0.7576
+        },
+        {
+          "transition": "Orange",
+          "distribution": 0.1515
+        },
+        {
+          "transition": "Red",
+          "distribution": 0.0909
+        }
+      ]
+    },
+    "Blue": {
+      "type": "Simple",
+      "direct_transition": "Set blue",
+      "name": "Blue"
+    },
+    "Terminal": {
+      "type": "Terminal",
+      "name": "Terminal"
+    },
+    "Orange": {
+      "type": "Simple",
+      "direct_transition": "Set orange",
+      "name": "Orange"
+    },
+    "Red": {
+      "type": "Simple",
+      "direct_transition": "Set red",
+      "name": "Red"
+    },
+    "Hospital visit end": {
+      "type": "EncounterEnd",
+      "direct_transition": "Terminal",
+      "name": "Hospital visit end"
+    },
+    "Set red": {
+      "type": "SetAttribute",
+      "attribute": "color",
+      "name": "Set red",
+      "distributed_transition": [
+        {
+          "transition": "Body height",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Body weight",
+          "distribution": 0.25
+        },
+        {
+          "distribution": 0.25,
+          "transition": "Hip Circumference"
+        },
+        {
+          "transition": "Waist Circumference",
+          "distribution": 0.25
+        }
+      ],
+      "value": "red"
+    },
+    "Body weight": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "29463-7",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "name": "Body weight",
+      "direct_transition": "Hospital visit end"
+    },
+    "Body height": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "8302-2",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "name": "Body height",
+      "direct_transition": "Hospital visit end"
+    },
+    "Waist Circumference": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "56072-8",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Waist Circumference"
+    },
+    "Hip Circumference": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "8287-5",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Hip Circumference"
+    },
+    "Cholesterol [Mass/volume] in Serum or Plasma": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "2093-3",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "name": "Cholesterol [Mass/volume] in Serum or Plasma",
+      "direct_transition": "Hospital visit end"
+    },
+    "Cholesterol in HDL [Mass/volume] in Serum or Plasma": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "2085-9",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Cholesterol in HDL [Mass/volume] in Serum or Plasma"
+    },
+    "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "13457-7",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation"
+    },
+    "Triglyceride [Mass/volume] in Serum or Plasma": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "2571-8",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Triglyceride [Mass/volume] in Serum or Plasma"
+    },
+    "Set blue": {
+      "type": "SetAttribute",
+      "attribute": "color",
+      "name": "Set blue",
+      "value": "blue",
+      "distributed_transition": [
+        {
+          "transition": "Chloride [Moles/volume] in Serum or Plasma",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Sodium [Moles/volume] in Serum or Plasma",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Potassium [Moles/volume] in Serum or Plasma",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Creatinine [Mass/volume] in Serum or Plasma",
+          "distribution": 0.25
+        }
+      ]
+    },
+    "Set orange": {
+      "type": "SetAttribute",
+      "attribute": "color",
+      "name": "Set orange",
+      "distributed_transition": [
+        {
+          "transition": "Triglyceride [Mass/volume] in Serum or Plasma",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Cholesterol [Mass/volume] in Serum or Plasma",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Cholesterol in HDL [Mass/volume] in Serum or Plasma",
+          "distribution": 0.25
+        }
+      ],
+      "value": "orange"
+    },
+    "Sodium [Moles/volume] in Serum or Plasma": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "2951-2",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Sodium [Moles/volume] in Serum or Plasma"
+    },
+    "Potassium [Moles/volume] in Serum or Plasma": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "2823-3",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Potassium [Moles/volume] in Serum or Plasma"
+    },
+    "Chloride [Moles/volume] in Serum or Plasma": {
+      "type": "Observation",
+      "category": "laboratory",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "2075-0",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Chloride [Moles/volume] in Serum or Plasma"
+    },
+    "Creatinine [Mass/volume] in Serum or Plasma": {
+      "type": "Observation",
+      "category": "vital-signs",
+      "unit": "",
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "2160-0",
+          "display": "LOINC Code",
+          "value_set": ""
+        }
+      ],
+      "distribution": {
+        "kind": "EXACT",
+        "round": false,
+        "parameters": {
+          "value": 1
+        }
+      },
+      "direct_transition": "Hospital visit end",
+      "name": "Creatinine [Mass/volume] in Serum or Plasma"
+    }
+  },
+  "gmf_version": 2
+}
