@@ -1,0 +1,63 @@
+{
+  "resourceType": "ViewDefinition",
+  "name": "LabObservationView",
+  "resource": "Observation",
+  "status": "draft",
+  "description": "Extracts laboratory observations with their timing and encounter information for TPD analysis.",
+  "where": [
+    {
+      "path": "category.coding.where(system='http://terminology.hl7.org/CodeSystem/observation-category' and code='laboratory').exists()",
+      "description": "Filter for Laboratory observations only."
+    },
+    {
+      "path": "encounter.exists()",
+      "description": "Ensure the observation has an associated encounter."
+    }
+  ],
+  "select": [
+    {
+      "column": [
+        {
+          "name": "observation_id",
+          "path": "id",
+          "description": "Unique ID of the lab observation."
+        },
+        {
+          "name": "lab_code",
+          "path": "code.coding.first().code",
+          "description": "LOINC code of the lab test."
+        },
+        {
+          "name": "lab_display",
+          "path": "code.coding.first().display",
+          "description": "Display name of the lab test."
+        },
+        {
+          "name": "status",
+          "path": "status",
+          "description": "Status of the observation."
+        },
+        {
+          "name": "effective_time",
+          "path": "effectiveDateTime",
+          "description": "When the observation was made/effective."
+        },
+        {
+          "name": "issued_time",
+          "path": "issued",
+          "description": "When the lab result was issued/available."
+        },
+        {
+          "name": "encounter_id",
+          "path": "encounter.reference",
+          "description": "Reference to the Encounter resource."
+        },
+        {
+          "name": "patient_id",
+          "path": "subject.reference",
+          "description": "Reference to the Patient resource."
+        }
+      ]
+    }
+  ]
+}

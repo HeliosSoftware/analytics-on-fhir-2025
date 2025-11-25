@@ -1,0 +1,49 @@
+{
+  "resourceType": "ViewDefinition",
+  "name": "EncounterView",
+  "resource": "Encounter",
+  "status": "draft",
+  "description": "Extracts encounter timing information for TPD analysis.",
+  "where": [
+    {
+      "path": "period.end.exists()",
+      "description": "Only include encounters that have ended (patient discharged)."
+    }
+  ],
+  "select": [
+    {
+      "column": [
+        {
+          "name": "encounter_id",
+          "path": "id",
+          "description": "Unique ID of the encounter."
+        },
+        {
+          "name": "encounter_class",
+          "path": "class.code",
+          "description": "Class of encounter (AMB, IMP, EMER, etc.)."
+        },
+        {
+          "name": "encounter_type",
+          "path": "type.first().coding.first().display",
+          "description": "Type of encounter."
+        },
+        {
+          "name": "start_time",
+          "path": "period.start",
+          "description": "When the encounter started."
+        },
+        {
+          "name": "end_time",
+          "path": "period.end",
+          "description": "When the encounter ended (discharge time)."
+        },
+        {
+          "name": "patient_id",
+          "path": "subject.reference",
+          "description": "Reference to the Patient resource."
+        }
+      ]
+    }
+  ]
+}

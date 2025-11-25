@@ -21,14 +21,16 @@ Tests Pending at Discharge represents a significant quality and safety concern i
 - **Continuity of Care**: Outpatient providers may lack essential diagnostic information
 - **Resource Utilization**: Follow-up testing may be duplicated unnecessarily
 
-This demonstration uses SQL on FHIR ViewDefinitions to identify and analyze pending laboratory results at patient discharge, providing actionable intelligence for quality improvement initiatives.
+This demonstration uses SQL on FHIR ViewDefinitions to identify and analyze laboratory results that were issued after patient discharge, providing actionable intelligence for quality improvement initiatives.
 
 ### Analytics Approach
 
 We'll use two complementary ViewDefinitions:
 
-1. **DiagnosticReportAtDischargeView**: Identifies individual lab reports that were not finalized by discharge time
-2. **EncounterPendingLabCountView**: Aggregates pending lab counts per encounter for population-level analysis
+1. **LabObservationView**: Extracts laboratory observations with timing and encounter references
+2. **EncounterView**: Extracts encounter timing information for discharge analysis
+
+By joining these views, we can identify labs that were issued after discharge time - representing tests that were pending when the patient left.
 
 ## Prerequisites
 
@@ -61,38 +63,38 @@ winget install EclipseAdoptium.Temurin.11.JDK
 
 #### Python and Dependencies
 
+It is recommended to use a virtual environment to avoid conflicts with system packages.
+
 **macOS/Linux:**
 ```bash
-python3 -m pip install --upgrade pip
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
 pip install pandas plotly pysof
 ```
 
 **Windows:**
 ```powershell
-python -m pip install --upgrade pip
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install --upgrade pip
 pip install pandas plotly pysof
 ```
+
+Note: On subsequent sessions, activate the virtual environment before running Python scripts:
+- macOS/Linux: `source venv/bin/activate`
+- Windows: `.\venv\Scripts\Activate.ps1`
 
 ## Demo Walkthrough
 
 ### Step 1: Generate Test Data with Synthea
 
-#### 1.1 Clone and Build Synthea
+#### 1.1 Clone Synthea
 
 ```bash
 # Clone Synthea
 git clone https://github.com/synthetichealth/synthea.git
 cd synthea
-
-# Build (this may take a few minutes)
-./gradlew build check test
-```
-
-**Windows:**
-```powershell
-git clone https://github.com/synthetichealth/synthea.git
-cd synthea
-.\gradlew.bat build check test
 ```
 
 #### 1.2 Install the TPD Custom Module
@@ -102,215 +104,177 @@ Copy the `tpd.json` module from this repository into Synthea's modules directory
 **macOS/Linux:**
 ```bash
 # From the synthea directory
-cp ../analytics-on-fhir-2025/tpd.json src/main/resources/modules/
+cp ../tpd.json src/main/resources/modules/
 ```
 
 **Windows:**
 ```powershell
-copy ..\analytics-on-fhir-2025\tpd.json src\main\resources\modules\
+copy ..\tpd.json src\main\resources\modules\
 ```
 
-#### 1.3 Configure NDJSON Export
+#### 1.3 Generate Synthetic Patients
 
-Configure Synthea to export FHIR data in NDJSON format by editing the `src/main/resources/synthea.properties` file:
+Generate 10000 patients with the TPD module:
 
 **macOS/Linux:**
 ```bash
-# Open synthea.properties in your editor
-nano src/main/resources/synthea.properties
+./run_synthea -m tpd -p 10000 --exporter.fhir.bulk_data=true
 ```
 
 **Windows:**
 ```powershell
-notepad src\main\resources\synthea.properties
-```
-
-Find and modify these settings:
-
-```properties
-# Disable bundle export
-exporter.fhir.export = false
-
-# Enable NDJSON export
-exporter.fhir.bulk_data = true
-```
-
-Save the file and exit.
-
-#### 1.4 Generate Synthetic Patients
-
-Generate 100 patients with the TPD module:
-
-**macOS/Linux:**
-```bash
-./run_synthea -m tpd -p 100 Massachusetts
-```
-
-**Windows:**
-```powershell
-.\run_synthea.bat -m tpd -p 100 Massachusetts
+.\run_synthea.bat -m tpd -p 10000 --exporter.fhir.bulk_data=true
 ```
 
 This creates FHIR R4 resources in NDJSON format in `output/fhir/` with:
-- Encounter resources (inpatient stays with varied lengths of stay)
-- DiagnosticReport resources (with realistic pending statuses)
-- Observation resources (laboratory results organized into Blue/Orange/Red categories)
+- Encounter resources (visits with varied lengths of stay)
+- Observation resources (laboratory results with timing information)
 
 The NDJSON format provides one FHIR resource per line, ideal for streaming and bulk processing.
 
-#### 1.5 Copy Generated Data
-
-Create a test data directory in this repository:
-
-**macOS/Linux:**
-```bash
-cd ../analytics-on-fhir-2025
-mkdir -p test-data
-cp ../synthea/output/fhir/*.ndjson test-data/
-```
-
-**Windows:**
-```powershell
-cd ..\analytics-on-fhir-2025
-mkdir test-data
-copy ..\synthea\output\fhir\*.ndjson test-data\
-```
-
 ### Step 2: Download Helios Software Binaries
 
-Download the appropriate binaries for your platform from [hfs v0.1.30 release](https://github.com/HeliosSoftware/hfs/releases/tag/v0.1.30):
-
-#### macOS
-
+Change directory back to the root of the project.
 ```bash
-# Download sof-cli
-curl -L https://github.com/HeliosSoftware/hfs/releases/download/v0.1.30/sof-cli-macos-x64 -o sof-cli
-chmod +x sof-cli
-
-# Download sof-server
-curl -L https://github.com/HeliosSoftware/hfs/releases/download/v0.1.30/sof-server-macos-x64 -o sof-server
-chmod +x sof-server
-
-# Verify installation
-./sof-cli --version
-./sof-server --version
+cd ..
 ```
 
-#### Linux
+Download and extract the appropriate binaries for your platform from the [latest hfs release](https://github.com/HeliosSoftware/hfs/releases/latest):
+
+#### macOS (Apple Silicon)
 
 ```bash
-# Download sof-cli
-curl -L https://github.com/HeliosSoftware/hfs/releases/download/v0.1.30/sof-cli-linux-x64 -o sof-cli
-chmod +x sof-cli
+# Download and extract the tar.gz archive
+curl -L https://github.com/HeliosSoftware/hfs/releases/latest/download/hfs-0.1.30-aarch64-apple-darwin.tar.gz -o hfs.tar.gz
+tar -xzf hfs.tar.gz
 
-# Download sof-server
-curl -L https://github.com/HeliosSoftware/hfs/releases/download/v0.1.30/sof-server-linux-x64 -o sof-server
-chmod +x sof-server
+# Make binaries executable
+chmod +x sof-cli sof-server
 
 # Verify installation
-./sof-cli --version
-./sof-server --version
+./sof-cli --help
+./sof-server --help
 ```
 
-#### Windows (PowerShell)
+#### Linux (x86_64)
+
+```bash
+# Download and extract the tar.gz archive
+curl -L https://github.com/HeliosSoftware/hfs/releases/latest/download/hfs-0.1.30-x86_64-unknown-linux-gnu.tar.gz -o hfs.tar.gz
+tar -xzf hfs.tar.gz
+
+# Make binaries executable
+chmod +x sof-cli sof-server
+
+# Verify installation
+./sof-cli --help
+./sof-server --help
+```
+
+#### Windows (x86_64)
 
 ```powershell
-# Download sof-cli
-Invoke-WebRequest -Uri "https://github.com/HeliosSoftware/hfs/releases/download/v0.1.30/sof-cli-windows-x64.exe" -OutFile "sof-cli.exe"
-
-# Download sof-server
-Invoke-WebRequest -Uri "https://github.com/HeliosSoftware/hfs/releases/download/v0.1.30/sof-server-windows-x64.exe" -OutFile "sof-server.exe"
+# Download and extract the zip archive
+Invoke-WebRequest -Uri "https://github.com/HeliosSoftware/hfs/releases/latest/download/hfs-0.1.30-x86_64-pc-windows-msvc.zip" -OutFile "hfs.zip"
+Expand-Archive -Path "hfs.zip" -DestinationPath "."
 
 # Verify installation
-.\sof-cli.exe --version
-.\sof-server.exe --version
+.\sof-cli.exe --help
+.\sof-server.exe --help
 ```
 
 ### Step 3: Batch Processing with sof-cli
 
 The `sof-cli` tool is ideal for batch transformations, ETL pipelines, and scheduled analytics jobs.
 
-#### 3.1 Run DiagnosticReportAtDischargeView
+#### 3.1 Run LabObservationView
 
-This ViewDefinition identifies individual lab reports pending at discharge:
+This ViewDefinition extracts laboratory observations with timing information:
 
 **macOS/Linux:**
 ```bash
-./sof-cli run \
-  --view-definition DiagnosticReportAtDischargeView.json \
-  --fhir-data test-data/ \
-  --output diagnostic_reports_pending.csv \
+./sof-cli \
+  --view LabObservationView.json \
+  --source ./synthea/output/fhir/Observation.ndjson \
+  --output lab_observations.csv \
   --format csv
 ```
 
 **Windows:**
 ```powershell
-.\sof-cli.exe run `
-  --view-definition DiagnosticReportAtDischargeView.json `
-  --fhir-data test-data\ `
-  --output diagnostic_reports_pending.csv `
+.\sof-cli.exe `
+  --view LabObservationView.json `
+  --source .\synthea\output\fhir\Observation.ndjson `
+  --output lab_observations.csv `
   --format csv
 ```
 
 **Output columns:**
-- `report_id`: Unique DiagnosticReport identifier
-- `hospital_discharge_time`: When the patient was discharged
-- `report_status`: Status of the report (registered, partial, preliminary)
+- `observation_id`: Unique Observation identifier
+- `lab_code`: LOINC code for the lab test
+- `lab_display`: Display name of the lab test
+- `status`: Status of the observation
+- `effective_time`: When the observation was made
+- `issued_time`: When the result was issued/available
 - `encounter_id`: Reference to the associated encounter
+- `patient_id`: Reference to the patient
 
-#### 3.2 Run EncounterPendingLabCountView
+#### 3.2 Run EncounterView
 
-This ViewDefinition provides encounter-level aggregation:
+This ViewDefinition extracts encounter timing for discharge analysis:
 
 **macOS/Linux:**
 ```bash
-./sof-cli run \
-  --view-definition EncounterPendingLabCountView.json \
-  --fhir-data test-data/ \
-  --output encounter_summary.csv \
+./sof-cli \
+  --view EncounterView.json \
+  --source ./synthea/output/fhir/Encounter.ndjson \
+  --output encounters.csv \
   --format csv
 ```
 
 **Windows:**
 ```powershell
-.\sof-cli.exe run `
-  --view-definition EncounterPendingLabCountView.json `
-  --fhir-data test-data\ `
-  --output encounter_summary.csv `
+.\sof-cli.exe `
+  --view EncounterView.json `
+  --source .\synthea\output\fhir\Encounter.ndjson `
+  --output encounters.csv `
   --format csv
 ```
 
 **Output columns:**
 - `encounter_id`: Unique encounter identifier
-- `hospital_discharge_time`: Discharge timestamp
-- `pending_lab_count`: Number of labs still pending at discharge
+- `encounter_class`: Class of encounter (AMB, IMP, etc.)
+- `encounter_type`: Type of encounter
+- `start_time`: When the encounter started
+- `end_time`: Discharge timestamp
+- `patient_id`: Reference to the patient
 
 #### 3.3 Inspect Results
 
 **macOS/Linux:**
 ```bash
 # View first 10 rows
-head -10 diagnostic_reports_pending.csv
-head -10 encounter_summary.csv
+head -10 lab_observations.csv
+head -10 encounters.csv
 
-# Count total pending reports
-wc -l diagnostic_reports_pending.csv
+# Count total lab observations
+wc -l lab_observations.csv
 
-# Find encounters with most pending labs
-sort -t, -k3 -nr encounter_summary.csv | head -10
+# Count encounters
+wc -l encounters.csv
 ```
 
 **Windows (PowerShell):**
 ```powershell
 # View first 10 rows
-Get-Content diagnostic_reports_pending.csv | Select-Object -First 10
-Get-Content encounter_summary.csv | Select-Object -First 10
+Get-Content lab_observations.csv | Select-Object -First 10
+Get-Content encounters.csv | Select-Object -First 10
 
-# Count total pending reports
-(Get-Content diagnostic_reports_pending.csv | Measure-Object -Line).Lines
+# Count total lab observations
+(Get-Content lab_observations.csv | Measure-Object -Line).Lines
 
-# Import and analyze
-Import-Csv encounter_summary.csv | Sort-Object pending_lab_count -Descending | Select-Object -First 10
+# Count encounters
+(Get-Content encounters.csv | Measure-Object -Line).Lines
 ```
 
 ### Step 4: Microservices with sof-server
@@ -321,23 +285,23 @@ The `sof-server` provides a REST API for on-demand ViewDefinition execution, ide
 
 **macOS/Linux:**
 ```bash
-./sof-server --port 8080 --fhir-data test-data/ &
+./sof-server --port 8080 --fhir-data ./synthea/output/fhir/ &
 ```
 
 **Windows (PowerShell, run in separate window):**
 ```powershell
-.\sof-server.exe --port 8080 --fhir-data test-data\
+.\sof-server.exe --port 8080 --fhir-data .\synthea\output\fhir\
 ```
 
 #### 4.2 Execute ViewDefinitions via HTTP
 
-**Execute DiagnosticReportAtDischargeView:**
+**Execute LabObservationView:**
 
 **macOS/Linux:**
 ```bash
 curl -X POST http://localhost:8080/run \
   -H "Content-Type: application/json" \
-  -d @DiagnosticReportAtDischargeView.json \
+  -d @LabObservationView.json \
   | jq '.'
 ```
 
@@ -345,25 +309,24 @@ curl -X POST http://localhost:8080/run \
 ```powershell
 Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run" `
   -ContentType "application/json" `
-  -InFile "DiagnosticReportAtDischargeView.json" | ConvertTo-Json
+  -InFile "LabObservationView.json" | ConvertTo-Json
 ```
 
-**Execute EncounterPendingLabCountView:**
+**Execute EncounterView:**
 
 **macOS/Linux:**
 ```bash
 curl -X POST http://localhost:8080/run \
   -H "Content-Type: application/json" \
-  -d @EncounterPendingLabCountView.json \
-  | jq '.rows[] | select(.pending_lab_count > 0)'
+  -d @EncounterView.json \
+  | jq '.'
 ```
 
 **Windows (PowerShell):**
 ```powershell
-$result = Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run" `
+Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run" `
   -ContentType "application/json" `
-  -InFile "EncounterPendingLabCountView.json"
-$result.rows | Where-Object { $_.pending_lab_count -gt 0 }
+  -InFile "EncounterView.json" | ConvertTo-Json
 ```
 
 ### Step 5: Data Science with pysof
@@ -381,110 +344,99 @@ Analytics on FHIR 2025 Conference Demo
 """
 
 import json
-import glob
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from pysof import ViewDefinitionRunner
 from datetime import datetime
-
-def load_fhir_data(data_dir='test-data'):
-    """Load all FHIR bundles from directory"""
-    fhir_bundles = []
-    for file_path in glob.glob(f'{data_dir}/*.json'):
-        with open(file_path, 'r') as f:
-            fhir_bundles.append(json.load(f))
-    return fhir_bundles
-
-def load_view_definition(file_path):
-    """Load a ViewDefinition from JSON file"""
-    with open(file_path, 'r') as f:
-        return json.load(f)
 
 def main():
     print("=" * 60)
     print("Tests Pending at Discharge - Analysis")
     print("=" * 60)
 
-    # Load FHIR data
-    print("\n1. Loading FHIR test data...")
-    fhir_data = load_fhir_data()
-    print(f"   Loaded {len(fhir_data)} FHIR bundles")
+    # Load the CSV files generated by sof-cli
+    print("\n1. Loading transformed data...")
+    labs_df = pd.read_csv('lab_observations.csv')
+    encounters_df = pd.read_csv('encounters.csv')
+    print(f"   Loaded {len(labs_df)} lab observations")
+    print(f"   Loaded {len(encounters_df)} encounters")
 
-    # Load ViewDefinitions
-    print("\n2. Loading ViewDefinitions...")
-    dr_view = load_view_definition('DiagnosticReportAtDischargeView.json')
-    enc_view = load_view_definition('EncounterPendingLabCountView.json')
-    print("   ✓ DiagnosticReportAtDischargeView")
-    print("   ✓ EncounterPendingLabCountView")
+    # Parse datetime columns
+    labs_df['issued_time'] = pd.to_datetime(labs_df['issued_time'])
+    encounters_df['end_time'] = pd.to_datetime(encounters_df['end_time'])
+    encounters_df['start_time'] = pd.to_datetime(encounters_df['start_time'])
 
-    # Execute ViewDefinitions
-    print("\n3. Running SQL on FHIR transformations...")
-    runner = ViewDefinitionRunner()
+    # Create encounter lookup with full reference format
+    encounters_df['encounter_ref'] = 'Encounter/' + encounters_df['encounter_id']
 
-    dr_results = runner.run(dr_view, fhir_data)
-    dr_df = pd.DataFrame(dr_results)
-    print(f"   ✓ Found {len(dr_df)} pending diagnostic reports")
+    # Merge labs with encounters to get discharge times
+    print("\n2. Joining labs with encounters...")
+    merged_df = labs_df.merge(
+        encounters_df[['encounter_ref', 'end_time', 'encounter_class', 'encounter_type']],
+        left_on='encounter_id',
+        right_on='encounter_ref',
+        how='inner'
+    )
+    print(f"   Matched {len(merged_df)} lab-encounter pairs")
 
-    enc_results = runner.run(enc_view, fhir_data)
-    enc_df = pd.DataFrame(enc_results)
-    print(f"   ✓ Analyzed {len(enc_df)} encounters")
+    # Identify labs issued after discharge
+    print("\n3. Identifying labs issued after discharge...")
+    merged_df['issued_after_discharge'] = merged_df['issued_time'] > merged_df['end_time']
+    pending_labs = merged_df[merged_df['issued_after_discharge']]
+    print(f"   Found {len(pending_labs)} labs issued after discharge")
 
     # Calculate summary statistics
     print("\n4. Summary Statistics")
     print("   " + "-" * 50)
 
-    encounters_with_pending = len(enc_df[enc_df['pending_lab_count'] > 0])
-    pending_rate = (encounters_with_pending / len(enc_df) * 100) if len(enc_df) > 0 else 0
+    total_encounters = len(encounters_df)
+    encounters_with_pending = pending_labs['encounter_id'].nunique()
+    pending_rate = (encounters_with_pending / total_encounters * 100) if total_encounters > 0 else 0
 
-    print(f"   Total encounters: {len(enc_df)}")
+    print(f"   Total encounters: {total_encounters}")
     print(f"   Encounters with pending labs: {encounters_with_pending}")
     print(f"   Pending lab rate: {pending_rate:.1f}%")
-    print(f"   Total pending lab reports: {len(dr_df)}")
+    print(f"   Total pending lab observations: {len(pending_labs)}")
 
-    if len(dr_df) > 0:
-        print(f"\n   Report Status Breakdown:")
-        status_counts = dr_df['report_status'].value_counts()
-        for status, count in status_counts.items():
-            print(f"     - {status}: {count}")
+    if len(pending_labs) > 0:
+        print(f"\n   Lab Code Distribution (top 10):")
+        code_counts = pending_labs['lab_code'].value_counts().head(10)
+        for code, count in code_counts.items():
+            print(f"     - {code}: {count}")
 
-    if len(enc_df) > 0 and 'pending_lab_count' in enc_df.columns:
-        avg_pending = enc_df['pending_lab_count'].mean()
-        max_pending = enc_df['pending_lab_count'].max()
-        print(f"\n   Average pending labs per encounter: {avg_pending:.2f}")
-        print(f"   Maximum pending labs (single encounter): {max_pending}")
+        avg_pending = len(pending_labs) / encounters_with_pending if encounters_with_pending > 0 else 0
+        print(f"\n   Average pending labs per affected encounter: {avg_pending:.2f}")
 
     # Create visualizations
     print("\n5. Generating visualizations...")
 
-    # Visualization 1: Pending Lab Status Distribution
-    if len(dr_df) > 0:
+    # Visualization 1: Lab Code Distribution
+    if len(pending_labs) > 0:
+        code_counts = pending_labs['lab_code'].value_counts().reset_index()
+        code_counts.columns = ['lab_code', 'count']
         fig1 = px.bar(
-            dr_df['report_status'].value_counts().reset_index(),
-            x='report_status',
+            code_counts.head(15),
+            x='lab_code',
             y='count',
-            title='Pending Lab Reports by Status',
-            labels={'report_status': 'Report Status', 'count': 'Number of Reports'},
-            color='report_status',
-            color_discrete_map={
-                'registered': '#ff7f0e',
-                'partial': '#2ca02c',
-                'preliminary': '#1f77b4'
-            }
+            title='Pending Labs at Discharge by LOINC Code',
+            labels={'lab_code': 'LOINC Code', 'count': 'Number of Pending Labs'},
+            color='count',
+            color_continuous_scale='Blues'
         )
         fig1.update_layout(showlegend=False, height=500)
-        fig1.write_html('viz_1_status_distribution.html')
-        print("   ✓ Created viz_1_status_distribution.html")
+        fig1.write_html('viz_1_lab_code_distribution.html')
+        print("   ✓ Created viz_1_lab_code_distribution.html")
 
-    # Visualization 2: Pending Lab Count Distribution
-    if len(enc_df) > 0 and 'pending_lab_count' in enc_df.columns:
+    # Visualization 2: Pending Labs per Encounter Distribution
+    if len(pending_labs) > 0:
+        pending_per_encounter = pending_labs.groupby('encounter_id').size().reset_index(name='pending_count')
         fig2 = px.histogram(
-            enc_df,
-            x='pending_lab_count',
+            pending_per_encounter,
+            x='pending_count',
             nbins=20,
             title='Distribution of Pending Lab Counts per Encounter',
-            labels={'pending_lab_count': 'Number of Pending Labs', 'count': 'Number of Encounters'},
+            labels={'pending_count': 'Number of Pending Labs', 'count': 'Number of Encounters'},
             color_discrete_sequence=['#1f77b4']
         )
         fig2.update_layout(height=500, showlegend=False)
@@ -492,11 +444,10 @@ def main():
         print("   ✓ Created viz_2_count_distribution.html")
 
     # Visualization 3: Time Series Analysis
-    if len(dr_df) > 0 and 'hospital_discharge_time' in dr_df.columns:
-        dr_df['hospital_discharge_time'] = pd.to_datetime(dr_df['hospital_discharge_time'])
-        dr_df['discharge_date'] = dr_df['hospital_discharge_time'].dt.date
-
-        daily_counts = dr_df.groupby('discharge_date').size().reset_index(name='count')
+    if len(pending_labs) > 0:
+        pending_labs_copy = pending_labs.copy()
+        pending_labs_copy['discharge_date'] = pending_labs_copy['end_time'].dt.date
+        daily_counts = pending_labs_copy.groupby('discharge_date').size().reset_index(name='count')
         daily_counts['discharge_date'] = pd.to_datetime(daily_counts['discharge_date'])
 
         fig3 = px.line(
@@ -513,11 +464,11 @@ def main():
         print("   ✓ Created viz_3_daily_trend.html")
 
     # Visualization 4: Combined Dashboard
-    if len(dr_df) > 0 and len(enc_df) > 0:
+    if len(pending_labs) > 0:
         fig4 = make_subplots(
             rows=2, cols=2,
             subplot_titles=(
-                'Status Distribution',
+                'Lab Code Distribution',
                 'Pending Count per Encounter',
                 'Key Metrics',
                 'Top Encounters by Pending Labs'
@@ -528,16 +479,17 @@ def main():
             ]
         )
 
-        # Status distribution
-        status_counts = dr_df['report_status'].value_counts()
+        # Lab code distribution
+        code_counts = pending_labs['lab_code'].value_counts().head(10)
         fig4.add_trace(
-            go.Bar(x=status_counts.index, y=status_counts.values, name='Status'),
+            go.Bar(x=code_counts.index, y=code_counts.values, name='Lab Codes'),
             row=1, col=1
         )
 
         # Pending count histogram
+        pending_per_encounter = pending_labs.groupby('encounter_id').size()
         fig4.add_trace(
-            go.Histogram(x=enc_df['pending_lab_count'], name='Count Distribution'),
+            go.Histogram(x=pending_per_encounter.values, name='Count Distribution'),
             row=1, col=2
         )
 
@@ -554,11 +506,12 @@ def main():
         )
 
         # Top encounters
-        top_encounters = enc_df.nlargest(10, 'pending_lab_count')
+        top_encounters = pending_per_encounter.nlargest(10).reset_index()
+        top_encounters.columns = ['encounter_id', 'pending_count']
         fig4.add_trace(
             go.Bar(
-                x=top_encounters['encounter_id'],
-                y=top_encounters['pending_lab_count'],
+                x=top_encounters['encounter_id'].str[:12] + '...',
+                y=top_encounters['pending_count'],
                 name='Top Encounters'
             ),
             row=2, col=2
@@ -572,18 +525,26 @@ def main():
         fig4.write_html('viz_4_dashboard.html')
         print("   ✓ Created viz_4_dashboard.html")
 
-    # Export data
-    print("\n6. Exporting data files...")
-    dr_df.to_csv('analysis_diagnostic_reports.csv', index=False)
-    enc_df.to_csv('analysis_encounters.csv', index=False)
-    print("   ✓ analysis_diagnostic_reports.csv")
-    print("   ✓ analysis_encounters.csv")
+    # Export analysis data
+    print("\n6. Exporting analysis files...")
+    if len(pending_labs) > 0:
+        pending_labs.to_csv('analysis_pending_labs.csv', index=False)
+        print("   ✓ analysis_pending_labs.csv")
+
+        # Create encounter summary
+        encounter_summary = pending_labs.groupby('encounter_id').agg({
+            'observation_id': 'count',
+            'lab_code': lambda x: ', '.join(x.unique()[:5])
+        }).reset_index()
+        encounter_summary.columns = ['encounter_id', 'pending_lab_count', 'lab_codes']
+        encounter_summary.to_csv('analysis_encounter_summary.csv', index=False)
+        print("   ✓ analysis_encounter_summary.csv")
 
     print("\n" + "=" * 60)
     print("Analysis complete!")
     print("=" * 60)
     print("\nOpen the HTML files in your browser to view visualizations:")
-    print("  - viz_1_status_distribution.html")
+    print("  - viz_1_lab_code_distribution.html")
     print("  - viz_2_count_distribution.html")
     print("  - viz_3_daily_trend.html")
     print("  - viz_4_dashboard.html")
@@ -593,6 +554,22 @@ if __name__ == '__main__':
 ```
 
 #### 5.2 Run the Analysis
+
+First, generate the CSV files using sof-cli (if not already done):
+
+**macOS/Linux:**
+```bash
+./sof-cli --view LabObservationView.json --source ./synthea/output/fhir/Observation.ndjson --output lab_observations.csv --format csv
+./sof-cli --view EncounterView.json --source ./synthea/output/fhir/Encounter.ndjson --output encounters.csv --format csv
+```
+
+**Windows:**
+```powershell
+.\sof-cli.exe --view LabObservationView.json --source .\synthea\output\fhir\Observation.ndjson --output lab_observations.csv --format csv
+.\sof-cli.exe --view EncounterView.json --source .\synthea\output\fhir\Encounter.ndjson --output encounters.csv --format csv
+```
+
+Then run the analysis:
 
 **macOS/Linux:**
 ```bash
@@ -629,9 +606,9 @@ Start-Process viz_4_dashboard.html
 
 ## Understanding the ViewDefinitions
 
-### DiagnosticReportAtDischargeView.json
+### LabObservationView.json
 
-This ViewDefinition identifies individual lab reports that were not finalized by patient discharge.
+This ViewDefinition extracts laboratory observations with their timing and encounter information.
 
 **Key Logic:**
 
@@ -639,74 +616,68 @@ This ViewDefinition identifies individual lab reports that were not finalized by
 {
   "where": [
     {
-      "path": "category.coding.where(system='http://terminology.hl7.org/CodeSystem/v2-0074' and code='LAB').exists()",
-      "description": "Filter for Laboratory reports only."
+      "path": "category.coding.where(system='http://terminology.hl7.org/CodeSystem/observation-category' and code='laboratory').exists()",
+      "description": "Filter for Laboratory observations only."
     },
     {
-      "path": "status in ('registered', 'partial', 'preliminary')",
-      "description": "Filter for reports that are not yet final/complete."
-    },
-    {
-      "path": "encounter.resolve().period.end.exists()",
-      "description": "Ensure the encounter has a discharge time."
-    },
-    {
-      "path": "issued > encounter.resolve().period.end",
-      "description": "The report was not 'issued' (or finalized) before or at the encounter end time (discharge)."
+      "path": "encounter.exists()",
+      "description": "Ensure the observation has an associated encounter."
     }
   ]
 }
 ```
 
 **FHIRPath Techniques:**
-- `.where()` - Filters collections
-- `.resolve()` - Follows references (DiagnosticReport → Encounter)
+- `.where()` - Filters collections based on conditions
 - `.exists()` - Checks for presence of values
-- Comparison operators - `>` compares dates/times
+- Compound conditions with `and`
 
-### EncounterPendingLabCountView.json
+### EncounterView.json
 
-This ViewDefinition provides encounter-level aggregation for population analysis.
+This ViewDefinition extracts encounter timing for discharge analysis.
 
 **Key Logic:**
 
 ```json
 {
-  "select": [
+  "where": [
     {
-      "column": [
-        {
-          "name": "pending_lab_count",
-          "path": "DiagnosticReport.where(encounter.reference=id and status in ('registered', 'partial', 'preliminary') and issued > %resource.period.end).count()",
-          "description": "Count of lab reports not issued by discharge time."
-        }
-      ]
+      "path": "period.end.exists()",
+      "description": "Only include encounters that have ended (patient discharged)."
     }
   ]
 }
 ```
 
-**Advanced Techniques:**
-- `DiagnosticReport.where()` - Queries across resource types
-- `%resource` - References the current Encounter being processed
-- `.count()` - Aggregates results
-- Complex boolean logic - Multiple conditions in single path
+**Key Fields:**
+- `period.start` - When the encounter began
+- `period.end` - When the patient was discharged
+- `class.code` - Type of encounter (AMB, IMP, etc.)
+
+### Analytics Join Pattern
+
+The analysis script demonstrates a common pattern for SQL on FHIR analytics:
+
+1. **Extract** data from different resource types using ViewDefinitions
+2. **Transform** timestamps and references
+3. **Join** the datasets on common keys (encounter references)
+4. **Analyze** the combined data to identify patterns
+
+This pattern enables complex analytics that span multiple FHIR resource types while keeping each ViewDefinition simple and focused.
 
 ## Expected Results
 
 ### Typical Findings
 
-From a dataset of 100 synthetic patients, you should expect:
+From a dataset of 10,000 synthetic patients, you should expect:
 
-- **20-30 encounters** with at least one pending lab
-- **40-60 total pending lab reports**
-- **Status distribution**: Approximately 40% preliminary, 35% registered, 25% partial
-- **Average pending labs**: 1-3 per affected encounter
-- **Peak pending labs**: 5-8 for outlier encounters
+- **Lab observations with encounter references**
+- **Encounters with timing information**
+- **Labs issued after discharge** (based on timing comparison)
 
 ### Clinical Interpretation
 
-High rates of pending labs suggest:
+Labs issued after discharge suggest:
 - Need for improved discharge coordination
 - Potential for clinical decision support at discharge
 - Opportunity for automated follow-up workflows
@@ -716,14 +687,14 @@ High rates of pending labs suggest:
 
 ```
 analytics-on-fhir-2025/
-├── README.md                              # This file
-├── DiagnosticReportAtDischargeView.json   # ViewDefinition for individual reports
-├── EncounterPendingLabCountView.json      # ViewDefinition for encounter aggregation
-├── tpd.json                               # Synthea module for test data generation
-├── analyze_tpd.py                         # Python analysis script
-├── test-data/                             # Generated FHIR bundles (created in Step 1)
-├── *.csv                                  # Analysis results (created in Steps 3 & 5)
-└── viz_*.html                             # Interactive visualizations (created in Step 5)
+├── README.md                    # This file
+├── LabObservationView.json      # ViewDefinition for lab observations
+├── EncounterView.json           # ViewDefinition for encounter timing
+├── tpd.json                     # Synthea module for test data generation
+├── analyze_tpd.py               # Python analysis script
+├── synthea/output/fhir/         # Generated FHIR data (created in Step 1)
+├── *.csv                        # Analysis results (created in Steps 3 & 5)
+└── viz_*.html                   # Interactive visualizations (created in Step 5)
 ```
 
 ## Additional Resources
@@ -743,14 +714,13 @@ analytics-on-fhir-2025/
 - [Generic Module Framework](https://github.com/synthetichealth/synthea/wiki/Generic-Module-Framework)
 
 ### FHIR Resources
-- [DiagnosticReport](https://www.hl7.org/fhir/diagnosticreport.html)
-- [Encounter](https://www.hl7.org/fhir/encounter.html)
 - [Observation](https://www.hl7.org/fhir/observation.html)
+- [Encounter](https://www.hl7.org/fhir/encounter.html)
 
 ## Questions or Feedback
 
 For questions about:
-- ** The instructions in this README: Open an issua at [analytics-on-fhir-2025 GitHub](https://github.com/HeliosSoftware/analytics-on-fhir-2025/issues)
+- **The instructions in this README**: Open an issue at [analytics-on-fhir-2025 GitHub](https://github.com/HeliosSoftware/analytics-on-fhir-2025/issues)
 - **Helios Software**: Open an issue at [hfs GitHub](https://github.com/HeliosSoftware/hfs/issues)
 - **SQL on FHIR**: Visit the [FHIR Chat](https://chat.fhir.org/) #sql-on-fhir channel
 

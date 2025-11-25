@@ -9,16 +9,18 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from pysof import ViewDefinitionRunner
+from pysof import run_view_definition
 from datetime import datetime
 
-def load_fhir_data(data_dir='test-data'):
-    """Load all FHIR bundles from directory"""
-    fhir_bundles = []
-    for file_path in glob.glob(f'{data_dir}/*.json'):
-        with open(file_path, 'r') as f:
-            fhir_bundles.append(json.load(f))
-    return fhir_bundles
+def load_ndjson_resources(file_path):
+    """Load FHIR resources from an NDJSON file"""
+    resources = []
+    with open(file_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                resources.append(json.loads(line))
+    return resources
 
 def load_view_definition(file_path):
     """Load a ViewDefinition from JSON file"""
@@ -30,45 +32,93 @@ def main():
     print("Tests Pending at Discharge - Analysis")
     print("=" * 60)
 
-    # Load FHIR data
-    print("\n1. Loading FHIR test data...")
-    fhir_data = load_fhir_data()
-    print(f"   Loaded {len(fhir_data)} FHIR bundles")
+    # Define data paths
+    fhir_dir = 'synthea/output/fhir'
+
+    # Load FHIR data from NDJSON files
+    print("\n1. Loading FHIR data from NDJSON files...")
+    encounters = load_ndjson_resources(f'{fhir_dir}/Encounter.ndjson')
+    observations = load_ndjson_resources(f'{fhir_dir}/Observation.ndjson')
+    print(f"   Loaded {len(encounters)} encounters")
+    print(f"   Loaded {len(observations)} observations")
 
     # Load ViewDefinitions
     print("\n2. Loading ViewDefinitions...")
-    dr_view = load_view_definition('DiagnosticReportAtDischargeView.json')
-    enc_view = load_view_definition('EncounterPendingLabCountView.json')
-    print("   ✓ DiagnosticReportAtDischargeView")
-    print("   ✓ EncounterPendingLabCountView")
+    enc_view = load_view_definition('EncounterView.json')
+    obs_view = load_view_definition('LabObservationView.json')
+    print("   ✓ EncounterView")
+    print("   ✓ LabObservationView")
 
     # Execute ViewDefinitions
     print("\n3. Running SQL on FHIR transformations...")
-    runner = ViewDefinitionRunner()
 
-    dr_results = runner.run(dr_view, fhir_data)
-    dr_df = pd.DataFrame(dr_results)
-    print(f"   ✓ Found {len(dr_df)} pending diagnostic reports")
+    # Create bundles from resources for pysof
+    encounter_bundle = {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [{"resource": e} for e in encounters]
+    }
+    observation_bundle = {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [{"resource": o} for o in observations]
+    }
 
-    enc_results = runner.run(enc_view, fhir_data)
-    enc_df = pd.DataFrame(enc_results)
-    print(f"   ✓ Analyzed {len(enc_df)} encounters")
+    # Run Encounter view
+    enc_result = run_view_definition(
+        view=enc_view,
+        bundle=encounter_bundle,
+        format="json"
+    )
+    enc_df = pd.DataFrame(json.loads(enc_result)) if enc_result else pd.DataFrame()
+    print(f"   ✓ Processed {len(enc_df)} encounters")
+
+    # Run Observation view
+    obs_result = run_view_definition(
+        view=obs_view,
+        bundle=observation_bundle,
+        format="json"
+    )
+    obs_df = pd.DataFrame(json.loads(obs_result)) if obs_result else pd.DataFrame()
+    print(f"   ✓ Processed {len(obs_df)} lab observations")
 
     # Calculate summary statistics
     print("\n4. Summary Statistics")
     print("   " + "-" * 50)
 
-    encounters_with_pending = len(enc_df[enc_df['pending_lab_count'] > 0])
+    # Calculate pending labs per encounter (labs without 'final' status at discharge time)
+    if len(obs_df) > 0 and len(enc_df) > 0:
+        # Count pending labs (not final) per encounter
+        pending_obs = obs_df[obs_df['status'] != 'final'] if 'status' in obs_df.columns else obs_df
+
+        # Count labs by encounter
+        if 'encounter_id' in obs_df.columns:
+            labs_per_encounter = obs_df.groupby('encounter_id').size().reset_index(name='lab_count')
+            pending_per_encounter = pending_obs.groupby('encounter_id').size().reset_index(name='pending_lab_count')
+
+            # Merge with encounters
+            enc_df = enc_df.merge(pending_per_encounter, on='encounter_id', how='left')
+            enc_df['pending_lab_count'] = enc_df['pending_lab_count'].fillna(0).astype(int)
+
+            encounters_with_pending = len(enc_df[enc_df['pending_lab_count'] > 0])
+        else:
+            encounters_with_pending = 0
+            enc_df['pending_lab_count'] = 0
+    else:
+        encounters_with_pending = 0
+        if 'pending_lab_count' not in enc_df.columns:
+            enc_df['pending_lab_count'] = 0
+
     pending_rate = (encounters_with_pending / len(enc_df) * 100) if len(enc_df) > 0 else 0
 
     print(f"   Total encounters: {len(enc_df)}")
+    print(f"   Total lab observations: {len(obs_df)}")
     print(f"   Encounters with pending labs: {encounters_with_pending}")
     print(f"   Pending lab rate: {pending_rate:.1f}%")
-    print(f"   Total pending lab reports: {len(dr_df)}")
 
-    if len(dr_df) > 0:
-        print(f"\n   Report Status Breakdown:")
-        status_counts = dr_df['report_status'].value_counts()
+    if len(obs_df) > 0 and 'status' in obs_df.columns:
+        print(f"\n   Lab Observation Status Breakdown:")
+        status_counts = obs_df['status'].value_counts()
         for status, count in status_counts.items():
             print(f"     - {status}: {count}")
 
@@ -81,19 +131,20 @@ def main():
     # Create visualizations
     print("\n5. Generating visualizations...")
 
-    # Visualization 1: Pending Lab Status Distribution
-    if len(dr_df) > 0:
+    # Visualization 1: Lab Observation Status Distribution
+    if len(obs_df) > 0 and 'status' in obs_df.columns:
         fig1 = px.bar(
-            dr_df['report_status'].value_counts().reset_index(),
-            x='report_status',
+            obs_df['status'].value_counts().reset_index(),
+            x='status',
             y='count',
-            title='Pending Lab Reports by Status',
-            labels={'report_status': 'Report Status', 'count': 'Number of Reports'},
-            color='report_status',
+            title='Lab Observations by Status',
+            labels={'status': 'Observation Status', 'count': 'Number of Observations'},
+            color='status',
             color_discrete_map={
                 'registered': '#ff7f0e',
-                'partial': '#2ca02c',
-                'preliminary': '#1f77b4'
+                'preliminary': '#2ca02c',
+                'final': '#1f77b4',
+                'amended': '#9467bd'
             }
         )
         fig1.update_layout(showlegend=False, height=500)
@@ -115,32 +166,35 @@ def main():
         print("   ✓ Created viz_2_count_distribution.html")
 
     # Visualization 3: Time Series Analysis
-    if len(dr_df) > 0 and 'hospital_discharge_time' in dr_df.columns:
-        dr_df['hospital_discharge_time'] = pd.to_datetime(dr_df['hospital_discharge_time'])
-        dr_df['discharge_date'] = dr_df['hospital_discharge_time'].dt.date
+    if len(enc_df) > 0 and 'end_time' in enc_df.columns:
+        enc_df['end_time_dt'] = pd.to_datetime(enc_df['end_time'], errors='coerce', utc=True)
+        enc_df['discharge_date'] = enc_df['end_time_dt'].dt.date
 
-        daily_counts = dr_df.groupby('discharge_date').size().reset_index(name='count')
-        daily_counts['discharge_date'] = pd.to_datetime(daily_counts['discharge_date'])
+        # Filter to encounters with pending labs
+        pending_encounters = enc_df[enc_df['pending_lab_count'] > 0]
+        if len(pending_encounters) > 0:
+            daily_counts = pending_encounters.groupby('discharge_date').size().reset_index(name='count')
+            daily_counts['discharge_date'] = pd.to_datetime(daily_counts['discharge_date'])
 
-        fig3 = px.line(
-            daily_counts,
-            x='discharge_date',
-            y='count',
-            title='Pending Labs at Discharge - Daily Trend',
-            labels={'discharge_date': 'Discharge Date', 'count': 'Number of Pending Labs'},
-            markers=True
-        )
-        fig3.update_traces(line_color='#d62728', marker=dict(size=8))
-        fig3.update_layout(height=500)
-        fig3.write_html('viz_3_daily_trend.html')
-        print("   ✓ Created viz_3_daily_trend.html")
+            fig3 = px.line(
+                daily_counts,
+                x='discharge_date',
+                y='count',
+                title='Encounters with Pending Labs at Discharge - Daily Trend',
+                labels={'discharge_date': 'Discharge Date', 'count': 'Number of Encounters'},
+                markers=True
+            )
+            fig3.update_traces(line_color='#d62728', marker=dict(size=8))
+            fig3.update_layout(height=500)
+            fig3.write_html('viz_3_daily_trend.html')
+            print("   ✓ Created viz_3_daily_trend.html")
 
     # Visualization 4: Combined Dashboard
-    if len(dr_df) > 0 and len(enc_df) > 0:
+    if len(obs_df) > 0 and len(enc_df) > 0:
         fig4 = make_subplots(
             rows=2, cols=2,
             subplot_titles=(
-                'Status Distribution',
+                'Lab Status Distribution',
                 'Pending Count per Encounter',
                 'Key Metrics',
                 'Top Encounters by Pending Labs'
@@ -152,11 +206,12 @@ def main():
         )
 
         # Status distribution
-        status_counts = dr_df['report_status'].value_counts()
-        fig4.add_trace(
-            go.Bar(x=status_counts.index, y=status_counts.values, name='Status'),
-            row=1, col=1
-        )
+        if 'status' in obs_df.columns:
+            status_counts = obs_df['status'].value_counts()
+            fig4.add_trace(
+                go.Bar(x=status_counts.index, y=status_counts.values, name='Status'),
+                row=1, col=1
+            )
 
         # Pending count histogram
         fig4.add_trace(
@@ -197,9 +252,9 @@ def main():
 
     # Export data
     print("\n6. Exporting data files...")
-    dr_df.to_csv('analysis_diagnostic_reports.csv', index=False)
+    obs_df.to_csv('analysis_lab_observations.csv', index=False)
     enc_df.to_csv('analysis_encounters.csv', index=False)
-    print("   ✓ analysis_diagnostic_reports.csv")
+    print("   ✓ analysis_lab_observations.csv")
     print("   ✓ analysis_encounters.csv")
 
     print("\n" + "=" * 60)
