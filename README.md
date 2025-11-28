@@ -329,10 +329,6 @@ pip install --upgrade pip
 pip install pandas plotly pysof
 ```
 
-Note: On subsequent sessions, activate the virtual environment before running Python scripts:
-- macOS/Linux: `source venv/bin/activate`
-- Windows: `.\venv\Scripts\Activate.ps1`
-
 #### 5.2 Review the Analysis Script
 
 The repository includes `analyze_tpd.py`, a Python script that demonstrates the Tests Pending at Discharge analysis. This script:
@@ -341,7 +337,7 @@ The repository includes `analyze_tpd.py`, a Python script that demonstrates the 
 - Joins lab observations with encounters on encounter references
 - Identifies labs where `issued_time > end_time` (issued after discharge)
 - Calculates summary statistics (pending rate, distribution by lab code)
-- Generates 4 interactive Plotly visualizations
+- Generates an interactive Plotly visualizations
 - Exports detailed analysis files for further investigation
 
 #### 5.3 Run the Analysis
