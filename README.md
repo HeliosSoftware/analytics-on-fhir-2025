@@ -358,24 +358,24 @@ python analyze_tpd.py
 #### 5.4 View Results
 
 The script generates:
-- **4 interactive HTML visualizations** (open in any web browser)
+- **HTML visualization** (open in any web browser)
 - **2 CSV files** with detailed results for further analysis
 
 Open the visualizations:
 
 **macOS:**
 ```bash
-open viz_4_dashboard.html
+open tests_pending_by_day.html
 ```
 
 **Linux:**
 ```bash
-xdg-open viz_4_dashboard.html
+xdg-open tests_pending_by_day.html
 ```
 
 **Windows:**
 ```powershell
-Start-Process viz_4_dashboard.html
+Start-Process tests_pending_by_day.html
 ```
 
 ## Understanding the ViewDefinitions
