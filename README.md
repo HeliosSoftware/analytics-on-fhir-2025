@@ -261,21 +261,23 @@ The `sof-server` provides a REST API for on-demand ViewDefinition execution, ide
 
 **macOS/Linux:**
 ```bash
-./sof-server --port 8080 --fhir-data ./synthea/output/fhir/ &
+./sof-server --port 8080 &
 ```
 
 **Windows (PowerShell, run in separate window):**
 ```powershell
-.\sof-server.exe --port 8080 --fhir-data .\synthea\output\fhir\
+.\sof-server.exe --port 8080
 ```
 
 #### 4.2 Execute ViewDefinitions via HTTP
+
+The server is stateless - each request must include both the ViewDefinition and the FHIR data source. Use the `--source` parameter to specify the NDJSON file path.
 
 **Execute LabObservationView:**
 
 **macOS/Linux:**
 ```bash
-curl -X POST http://localhost:8080/run \
+curl -X POST "http://localhost:8080/run?source=./synthea/output/fhir/Observation.ndjson" \
   -H "Content-Type: application/json" \
   -d @LabObservationView.json \
   | jq '.'
@@ -283,7 +285,7 @@ curl -X POST http://localhost:8080/run \
 
 **Windows (PowerShell):**
 ```powershell
-Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run" `
+Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run?source=.\synthea\output\fhir\Observation.ndjson" `
   -ContentType "application/json" `
   -InFile "LabObservationView.json" | ConvertTo-Json
 ```
@@ -292,7 +294,7 @@ Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run" `
 
 **macOS/Linux:**
 ```bash
-curl -X POST http://localhost:8080/run \
+curl -X POST "http://localhost:8080/run?source=./synthea/output/fhir/Encounter.ndjson" \
   -H "Content-Type: application/json" \
   -d @EncounterView.json \
   | jq '.'
@@ -300,7 +302,7 @@ curl -X POST http://localhost:8080/run \
 
 **Windows (PowerShell):**
 ```powershell
-Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run" `
+Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run?source=.\synthea\output\fhir\Encounter.ndjson" `
   -ContentType "application/json" `
   -InFile "EncounterView.json" | ConvertTo-Json
 ```
