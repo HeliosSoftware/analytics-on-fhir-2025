@@ -271,40 +271,25 @@ The `sof-server` provides a REST API for on-demand ViewDefinition execution, ide
 
 #### 4.2 Execute ViewDefinitions via HTTP
 
-The server is stateless - each request must include both the ViewDefinition and the FHIR data source. Use the `--source` parameter to specify the NDJSON file path.
+The server is stateless - each request must include both the ViewDefinition and the FHIR data source.  Note - the `source` parameter will need an absolute path in this example.
 
 **Execute LabObservationView:**
 
 **macOS/Linux:**
 ```bash
-curl -X POST "http://localhost:8080/run?source=./synthea/output/fhir/Observation.ndjson" \
+curl -X POST "http://localhost:8080/ViewDefinition/\$viewdefinition-run?source=file://\$(pwd)/synthea/output/fhir/Observation.ndjson" \
   -H "Content-Type: application/json" \
-  -d @LabObservationView.json \
+  -H "Accept: application/json" \
+  -d @LabObservationViewAsParameters.json \
   | jq '.'
 ```
 
 **Windows (PowerShell):**
 ```powershell
-Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run?source=.\synthea\output\fhir\Observation.ndjson" `
+Invoke-RestMethod -Method POST -Uri "http://localhost:8080/ViewDefinition/`$viewdefinition-run?source=file:///$((Get-Location).Path -replace '\\','/')/synthea/output/fhir/Observation.ndjson" `
   -ContentType "application/json" `
-  -InFile "LabObservationView.json" | ConvertTo-Json
-```
-
-**Execute EncounterView:**
-
-**macOS/Linux:**
-```bash
-curl -X POST "http://localhost:8080/run?source=./synthea/output/fhir/Encounter.ndjson" \
-  -H "Content-Type: application/json" \
-  -d @EncounterView.json \
-  | jq '.'
-```
-
-**Windows (PowerShell):**
-```powershell
-Invoke-RestMethod -Method POST -Uri "http://localhost:8080/run?source=.\synthea\output\fhir\Encounter.ndjson" `
-  -ContentType "application/json" `
-  -InFile "EncounterView.json" | ConvertTo-Json
+  -Headers @{Accept="application/json"} `
+  -InFile "LabObservationViewAsParameters.json" | ConvertTo-Json
 ```
 
 ### Step 5: Data Science with pysof
