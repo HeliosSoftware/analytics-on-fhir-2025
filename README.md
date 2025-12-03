@@ -121,7 +121,7 @@ Download and extract the appropriate binaries for your platform from the [latest
 
 ```bash
 # Download and extract the tar.gz archive
-curl -L https://github.com/HeliosSoftware/hfs/releases/latest/download/hfs-0.1.31-aarch64-apple-darwin.tar.gz -o hfs.tar.gz
+curl -L https://github.com/HeliosSoftware/hfs/releases/download/v0.1.32/hfs-0.1.32-aarch64-apple-darwin.tar.gz -o hfs.tar.gz
 tar -xzf hfs.tar.gz
 
 # Make binaries executable
@@ -136,7 +136,7 @@ chmod +x sof-cli sof-server
 
 ```bash
 # Download and extract the tar.gz archive
-curl -L https://github.com/HeliosSoftware/hfs/releases/latest/download/hfs-0.1.31-x86_64-unknown-linux-gnu.tar.gz -o hfs.tar.gz
+curl -L https://github.com/HeliosSoftware/hfs/releases/download/v0.1.32/hfs-0.1.32-x86_64-unknown-linux-gnu.tar.gz -o hfs.tar.gz
 tar -xzf hfs.tar.gz
 
 # Make binaries executable
@@ -151,7 +151,7 @@ chmod +x sof-cli sof-server
 
 ```powershell
 # Download and extract the zip archive
-Invoke-WebRequest -Uri "https://github.com/HeliosSoftware/hfs/releases/latest/download/hfs-0.1.31-x86_64-pc-windows-msvc.zip" -OutFile "hfs.zip"
+Invoke-WebRequest -Uri "https://github.com/HeliosSoftware/hfs/releases/download/v0.1.32/hfs-0.1.32-x86_64-pc-windows-msvc.zip" -OutFile "hfs.zip"
 Expand-Archive -Path "hfs.zip" -DestinationPath "."
 
 # Verify installation
@@ -480,7 +480,7 @@ analytics-on-fhir-2025/
 
 ### Helios Software
 - [GitHub Repository](https://github.com/HeliosSoftware/hfs)
-- [Release v0.1.31](https://github.com/HeliosSoftware/hfs/releases/tag/v0.1.31)
+- [Release v0.1.32](https://github.com/HeliosSoftware/hfs/releases/tag/v0.1.32)
 
 ### Synthea
 - [Synthea GitHub](https://github.com/synthetichealth/synthea)
