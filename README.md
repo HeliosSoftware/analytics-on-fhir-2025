@@ -10,6 +10,8 @@ Helios Software is an open source Rust implementation of SQL on FHIR that includ
 
 In this session, Steve will demonstrate a real-world laboratory analytics challenge across different workflows, illustrating concrete patterns for integrating SQL on FHIR into pipelines for batch, microservice, and data science workloads.
 
+The presentation for this session can be found [here](https://docs.google.com/presentation/d/1-Oj_Cs6YeNMZA6GFuvruQxGXbHl1A-ukRhRup0OHN2o/edit?usp=sharing).
+
 ## Use Case: Tests Pending at Discharge (TPD)
 
 ### Clinical Scenario
